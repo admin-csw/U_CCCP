@@ -51,10 +51,13 @@ int main() {
     // Launch stage1Kernel in stream1
     stage1Kernel<<<gridDim, blockDim, 0, stream1>>>(d_input, d_intermediate, size);
 
-    // Wait for stage1 to complete
-    cudaStreamSynchronize(stream1);
+    // stream2가 stream1의 완료를 기다리도록 이벤트 사용
+    cudaEvent_t stage1_complete;
+    cudaEventCreate(&stage1_complete);
+    cudaEventRecord(stage1_complete, stream1);
+    cudaStreamWaitEvent(stream2, stage1_complete, 0);
 
-    // Launch stage2Kernel in stream2
+    // Launch stage2Kernel in stream2 (stage1 완료 후)
     stage2Kernel<<<gridDim, blockDim, 0, stream2>>>(d_intermediate, d_output, size);
 
     // Transfer data from device to host using stream2
@@ -63,6 +66,9 @@ int main() {
     // Synchronize streams
     cudaStreamSynchronize(stream1);
     cudaStreamSynchronize(stream2);
+
+    // Cleanup event
+    cudaEventDestroy(stage1_complete);
 
     // Print results
     for (int i = 0; i < size; i++) {
