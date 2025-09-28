@@ -13,13 +13,21 @@ SOURCES = $(wildcard $(SRCDIR)/*.cu)
 OBJECTS = $(SOURCES:$(SRCDIR)/%.cu=$(BUILDDIR)/%.o)
 TARGET = $(BINDIR)/hello_cuda
 
-all: $(TARGET)
+# Section 4 소스 파일들
+SECTION4_SOURCES = $(wildcard $(SRCDIR)/Section\ 4/*.cu)
+SECTION4_TARGETS = $(SECTION4_SOURCES:$(SRCDIR)/Section\ 4/%.cu=$(BINDIR)/%)
+
+all: $(TARGET) $(SECTION4_TARGETS)
 
 $(TARGET): $(OBJECTS) | $(BINDIR)
 	$(NVCC) $(CUDA_FLAGS) $(OBJECTS) -o $@ $(LIBS)
 
 $(BUILDDIR)/%.o: $(SRCDIR)/%.cu | $(BUILDDIR)
 	$(NVCC) $(CUDA_FLAGS) $(INCLUDES) -c $< -o $@
+
+# Section 4 타겟들
+$(BINDIR)/%: $(SRCDIR)/Section\ 4/%.cu | $(BINDIR)
+	$(NVCC) $(CUDA_FLAGS) $(INCLUDES) "$(SRCDIR)/Section 4/$*.cu" -o $@ $(LIBS)
 
 $(BINDIR):
 	mkdir -p $(BINDIR)
@@ -33,4 +41,13 @@ clean:
 run: $(TARGET)
 	./$(TARGET)
 
-.PHONY: all clean run
+# Section 4 개별 실행 타겟들
+run-bank-conflict: $(BINDIR)/bank_conflict
+	./$(BINDIR)/bank_conflict
+
+run-pipeline: $(BINDIR)/pipeline
+	./$(BINDIR)/pipeline
+
+.PHONY: all clean run run-bank-conflict run-pipeline
+
+.PHONY: all clean run run-bank-conflict
